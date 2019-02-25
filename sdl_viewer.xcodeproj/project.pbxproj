@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		B443803A221E629A0029F217 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B4438039221E629A0029F217 /* main.cpp */; };
+		B4438042221E62F20029F217 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B4438041221E62F20029F217 /* SDL2.framework */; };
+		B4E1628C2220DBA800162B8E /* SDL2_image.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B4E1628B2220DBA800162B8E /* SDL2_image.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +27,8 @@
 /* Begin PBXFileReference section */
 		B4438036221E629A0029F217 /* sdl_viewer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = sdl_viewer; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4438039221E629A0029F217 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		B4438041221E62F20029F217 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = ../../../../../../Library/Frameworks/SDL2.framework; sourceTree = "<group>"; };
+		B4E1628B2220DBA800162B8E /* SDL2_image.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2_image.framework; path = ../../../../../../Library/Frameworks/SDL2_image.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +36,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B4E1628C2220DBA800162B8E /* SDL2_image.framework in Frameworks */,
+				B4438042221E62F20029F217 /* SDL2.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,6 +49,7 @@
 			children = (
 				B4438038221E629A0029F217 /* sdl_viewer */,
 				B4438037221E629A0029F217 /* Products */,
+				B4438040221E62F10029F217 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -60,6 +67,15 @@
 				B4438039221E629A0029F217 /* main.cpp */,
 			);
 			path = sdl_viewer;
+			sourceTree = "<group>";
+		};
+		B4438040221E62F10029F217 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B4E1628B2220DBA800162B8E /* SDL2_image.framework */,
+				B4438041221E62F20029F217 /* SDL2.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -142,7 +158,7 @@
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
@@ -200,7 +216,7 @@
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
@@ -238,6 +254,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -246,6 +267,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
