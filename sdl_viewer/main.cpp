@@ -33,6 +33,7 @@
 #define ERROR_MESSAGE_TITLE "System Error"
 
 bool initDisplay();
+void renderMainScreen();
 void handleMouseClick(Sint32 x, Sint32 y);
 
 enum appIndex
@@ -180,60 +181,81 @@ void handleMouseClick(Sint32 x, Sint32 y)
     // Determine the selected app index and set the current view
     appIndex appClicked = getMouseClickIndex(x, y);
     
-    if (currentView == MAIN_WINDOW_VIEW)
+    if (prevView != currentView)
     {
-        if (prevView != currentView)
-            initDisplay();
-    }
-    else
-    {
-        const char* media;
-        switch (appClicked)
+        if (currentView == MAIN_WINDOW_VIEW)
         {
-            case FRONT_CAMERA_INDEX:
-                media = "media/testView.jpg";
-                break;
-            case REAR_CAMERA_INDEX:
-                media = "media/bg1.jpg";
-                break;
-            case ANDROID_AUTO_INDEX:
-                media = "media/bg3.jpg";
-                break;
-            default:
-                break;
+            renderMainScreen();
         }
-        
-        SDL_Rect newScreen;
-        newScreen.x = 0;
-        newScreen.y = 0;
-        newScreen.w = SCREEN_WIDTH;
-        newScreen.h = SCREEN_HEIGHT;
-        texture = IMG_LoadTexture(renderer, media);
-        SDL_RenderCopy(renderer, texture, NULL, &newScreen);
-        
-        // Back button display
-        SDL_Rect backButton;
-        backButton.x = BACK_BUTTON_X;
-        backButton.y = BACK_BUTTON_Y;
-        backButton.w = BUTTON_SIZE;
-        backButton.h = BUTTON_SIZE;
-        texture = IMG_LoadTexture(renderer, "media/arrow.png");
-        SDL_RenderCopy(renderer, texture, NULL, &backButton);
-        
-        if (currentView == REAR_CAMERA_VIEW)
+        else
+        {
+            const char* media;
+            switch (appClicked)
+            {
+                case FRONT_CAMERA_INDEX:
+                    media = "media/cam3.jpg";
+                    break;
+                case REAR_CAMERA_INDEX:
+                    media = "media/cam3.jpg";
+                    break;
+                case ANDROID_AUTO_INDEX:
+                    media = "media/cam2.jpg";
+                    break;
+                default:
+                    break;
+            }
+            
+            // Display the selected screen
+            SDL_Rect newScreen;
+            newScreen.x = 0;
+            newScreen.y = 0;
+            newScreen.w = SCREEN_WIDTH;
+            newScreen.h = SCREEN_HEIGHT;
+            texture = IMG_LoadTexture(renderer, media);
+            SDL_RenderCopy(renderer, texture, NULL, &newScreen);
+            
+            // Overlay back button
+            SDL_Rect backButton;
+            backButton.x = BACK_BUTTON_X;
+            backButton.y = BACK_BUTTON_Y;
+            backButton.w = BUTTON_SIZE;
+            backButton.h = BUTTON_SIZE;
+            texture = IMG_LoadTexture(renderer, "media/arrow.png");
+            SDL_RenderCopy(renderer, texture, NULL, &backButton);
+            
+            if (currentView == REAR_CAMERA_VIEW)
+            {
+                // Display backup guides
+                SDL_Rect backupGuides;
+                backupGuides.x = BACKUP_GUIDES_X;
+                backupGuides.y = BACKUP_GUIDES_Y;
+                backupGuides.w = BUTTON_SIZE;
+                backupGuides.h = BUTTON_SIZE;
+                texture = IMG_LoadTexture(renderer, "media/guides.png");
+                SDL_RenderCopy(renderer, texture, NULL, &backupGuides);
+            }
+            
+            // Draw to the window tied to the renderer
+            SDL_RenderPresent(renderer);
+        }
+    }
+    else if (currentView == REAR_CAMERA_VIEW)
+    {
+        if (appClicked == BACKUP_GUIDES_INDEX)
         {
             // Back button display
             SDL_Rect backupGuides;
-            backupGuides.x = BACKUP_GUIDES_X;
-            backupGuides.y = BACKUP_GUIDES_Y;
-            backupGuides.w = BUTTON_SIZE;
-            backupGuides.h = BUTTON_SIZE;
+            backupGuides.x = 0;
+            backupGuides.y = 0;
+            backupGuides.w = SCREEN_WIDTH;
+            backupGuides.h = SCREEN_HEIGHT;
             texture = IMG_LoadTexture(renderer, "media/guides.png");
             SDL_RenderCopy(renderer, texture, NULL, &backupGuides);
+
+            // Draw to the window tied to the renderer
+            SDL_RenderPresent(renderer);
+
         }
-        
-        // Draw to the window tied to the renderer
-        SDL_RenderPresent(renderer);
     }
 }
 
@@ -285,6 +307,59 @@ void renderClock()
     SDL_RenderCopy(renderer, texture, NULL, &digit4);
 }
 
+void renderMainScreen()
+{
+    // Set the color the screen clears to
+    SDL_SetRenderDrawColor(renderer, 0x36, 0x53, 0x82, 0xFF);
+    
+    // Clear the entire screen to our selected color
+    SDL_RenderClear(renderer);
+    
+    //                // Main screen background
+    //                SDL_Rect mainBG;
+    //                mainBG.x = 0;
+    //                mainBG.y = 0;
+    //                mainBG.w = SCREEN_WIDTH;
+    //                mainBG.h = SCREEN_HEIGHT;
+    //                texture = IMG_LoadTexture(renderer, "media/bg2_light.png");
+    //                SDL_RenderCopy(renderer, texture, NULL, &mainBG);
+    
+    // Front camera display
+    SDL_Rect frontCam;
+    frontCam.x = FRONT_CAM_X;
+    frontCam.y = FRONT_CAM_Y;
+    frontCam.w = VIDEO_WIDTH;
+    frontCam.h = VIDEO_HEIGHT;
+    texture = IMG_LoadTexture(renderer, "media/cam3.jpg");
+    SDL_RenderCopy(renderer, texture, NULL, &frontCam);
+    
+    // Rear camera display
+    SDL_Rect rearCam;
+    rearCam.x = REAR_CAM_X;
+    rearCam.y = REAR_CAM_Y;
+    rearCam.w = VIDEO_WIDTH;
+    rearCam.h = VIDEO_HEIGHT;
+    texture = IMG_LoadTexture(renderer, "media/cam3.jpg");
+    SDL_RenderCopy(renderer, texture, NULL, &rearCam);
+    
+    // Android auto display
+    SDL_Rect androidAuto;
+    androidAuto.x = ANDROID_AUTO_CAM_X;
+    androidAuto.y = ANDROID_AUTO_CAM_Y;
+    androidAuto.w = VIDEO_WIDTH;
+    androidAuto.h = VIDEO_HEIGHT;
+    texture = IMG_LoadTexture(renderer, "media/androidAuto.jpeg");
+    SDL_RenderCopy(renderer, texture, NULL, &androidAuto);
+    
+    renderClock();
+    
+    // Draw to the window tied to the renderer
+    SDL_RenderPresent(renderer);
+    
+    // View starts on main screen
+    currentView = MAIN_WINDOW_VIEW;
+}
+
 bool initDisplay()
 {
     if (SDL_Init(SDL_INIT_VIDEO) >= 0)
@@ -304,55 +379,7 @@ bool initDisplay()
             
             if (renderer != NULL)
             {
-                // Set the color the screen clears to
-                SDL_SetRenderDrawColor(renderer, 0x36, 0x53, 0x82, 0xFF);
-
-                // Clear the entire screen to our selected color
-                SDL_RenderClear(renderer);
-                
-                // Main screen background
-                SDL_Rect mainBG;
-                mainBG.x = 0;
-                mainBG.y = 0;
-                mainBG.w = SCREEN_WIDTH;
-                mainBG.h = SCREEN_HEIGHT;
-                texture = IMG_LoadTexture(renderer, "media/bg2_light.png");
-                SDL_RenderCopy(renderer, texture, NULL, &mainBG);
-                
-                // Front camera display
-                SDL_Rect frontCam;
-                frontCam.x = FRONT_CAM_X;
-                frontCam.y = FRONT_CAM_Y;
-                frontCam.w = VIDEO_WIDTH;
-                frontCam.h = VIDEO_HEIGHT;
-                texture = IMG_LoadTexture(renderer, "media/testView.jpg");
-                SDL_RenderCopy(renderer, texture, NULL, &frontCam);
-                
-                // Rear camera display
-                SDL_Rect rearCam;
-                rearCam.x = REAR_CAM_X;
-                rearCam.y = REAR_CAM_Y;
-                rearCam.w = VIDEO_WIDTH;
-                rearCam.h = VIDEO_HEIGHT;
-                texture = IMG_LoadTexture(renderer, "media/testView.jpg");
-                SDL_RenderCopy(renderer, texture, NULL, &rearCam);
-
-                // Android auto display
-                SDL_Rect androidAuto;
-                androidAuto.x = ANDROID_AUTO_CAM_X;
-                androidAuto.y = ANDROID_AUTO_CAM_Y;
-                androidAuto.w = VIDEO_WIDTH;
-                androidAuto.h = VIDEO_HEIGHT;
-                texture = IMG_LoadTexture(renderer, "media/androidAuto.jpeg");
-                SDL_RenderCopy(renderer, texture, NULL, &androidAuto);
-                
-                renderClock();
-                
-                // Draw to the window tied to the renderer
-                SDL_RenderPresent(renderer);
-                
-                // View starts on main screen
-                currentView = MAIN_WINDOW_VIEW;
+                renderMainScreen();
             }
             else
             {
