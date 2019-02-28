@@ -9,12 +9,12 @@
 #define VIDEO_WIDTH         200
 #define VIDEO_HEIGHT        120
 #define VIDEO_OFFSET        40
-#define BUTTON_SIZE         VIDEO_OFFSET
+#define BUTTON_SIZE         50
 #define FRONT_CAM_X         VIDEO_OFFSET
 #define FRONT_CAM_Y         VIDEO_OFFSET
 #define REAR_CAM_X          VIDEO_OFFSET
 #define REAR_CAM_Y          SCREEN_HEIGHT - VIDEO_OFFSET - VIDEO_HEIGHT
-#define ANDROID_AUTO_CAM_X  SCREEN_WIDTH - VIDEO_OFFSET - VIDEO_WIDTH
+#define ANDROID_AUTO_CAM_X  SCREEN_WIDTH  - VIDEO_OFFSET - VIDEO_WIDTH
 #define ANDROID_AUTO_CAM_Y  VIDEO_OFFSET
 #define BACK_BUTTON_X       VIDEO_OFFSET
 #define BACK_BUTTON_Y       VIDEO_OFFSET
@@ -30,11 +30,22 @@
 
 // Other defines
 #define DEBOUNCE_MAX 60
-#define ERROR_MESSAGE_TITLE "System Error"
-
-bool initDisplay();
-void renderMainScreen();
-void handleMouseClick(Sint32 x, Sint32 y);
+#define ERROR_MESSAGE_TITLE  "System Error"
+#define MEDIA_BACKGROUND     "media/bg2.jpg"
+#define MEDIA_ARROW          "media/arrow.png"
+#define MEDIA_GUIDES         "media/guides.png"
+#define MEDIA_ANDROID_AUTO   "media/androidAuto.jpeg"
+#define MEDIA_CLOCK_0        "media/0.png"
+#define MEDIA_CLOCK_1        "media/1.png"
+#define MEDIA_CLOCK_2        "media/2.png"
+#define MEDIA_CLOCK_3        "media/3.png"
+#define MEDIA_CLOCK_4        "media/4.png"
+#define MEDIA_CLOCK_5        "media/5.png"
+#define MEDIA_CLOCK_6        "media/6.png"
+#define MEDIA_CLOCK_7        "media/7.png"
+#define MEDIA_CLOCK_8        "media/8.png"
+#define MEDIA_CLOCK_9        "media/9.png"
+#define MEDIA_CLOCK_C        "media/colon.png"
 
 enum appIndex
 {
@@ -54,6 +65,7 @@ enum displayView
     ANDROID_AUTO_VIEW
 } currentView;
 
+// Global variables
 SDL_Window* window = NULL;      // The window we'll be rendering to
 SDL_Renderer* renderer = NULL;  // The window renderer
 SDL_Texture* texture = NULL;    // Current displayed texture
@@ -61,12 +73,36 @@ SDL_Event e;
 
 static volatile int keepRunning = 1;
 int mousePressCounter = 0;
+bool backupGuidesActive = false;
+
+// Function declarations
+void errorMessage(const char* msg);
+void screenControl_tick();
+bool initDisplay();
+bool initTCP();
+void renderClock();
+void renderMainScreen();
+void handleMouseClick(Sint32 x, Sint32 y);
+void addTexture(int x, int y, int w, int h, const char* media);
+void destroySDL();
+appIndex getMouseClickIndex(Sint32 x, Sint32 y);
 
 void errorMessage(const char* msg)
 {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, ERROR_MESSAGE_TITLE, msg, NULL);
     
     printf("SDL_Error: %s\n", SDL_GetError());
+}
+
+void addTexture(int x, int y, int w, int h, const char* media)
+{
+    SDL_Rect rect;
+    rect.x = x;
+    rect.y = y;
+    rect.w = w;
+    rect.h = h;
+    texture = IMG_LoadTexture(renderer, media);
+    SDL_RenderCopy(renderer, texture, NULL, &rect);
 }
 
 enum screenControl_st_t
@@ -206,33 +242,17 @@ void handleMouseClick(Sint32 x, Sint32 y)
             }
             
             // Display the selected screen
-            SDL_Rect newScreen;
-            newScreen.x = 0;
-            newScreen.y = 0;
-            newScreen.w = SCREEN_WIDTH;
-            newScreen.h = SCREEN_HEIGHT;
-            texture = IMG_LoadTexture(renderer, media);
-            SDL_RenderCopy(renderer, texture, NULL, &newScreen);
+            addTexture(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, media);
             
             // Overlay back button
-            SDL_Rect backButton;
-            backButton.x = BACK_BUTTON_X;
-            backButton.y = BACK_BUTTON_Y;
-            backButton.w = BUTTON_SIZE;
-            backButton.h = BUTTON_SIZE;
-            texture = IMG_LoadTexture(renderer, "media/arrow.png");
-            SDL_RenderCopy(renderer, texture, NULL, &backButton);
+            addTexture(BACK_BUTTON_X, BACK_BUTTON_Y, BUTTON_SIZE,
+                       BUTTON_SIZE, MEDIA_ARROW);
             
             if (currentView == REAR_CAMERA_VIEW)
             {
                 // Display backup guides
-                SDL_Rect backupGuides;
-                backupGuides.x = BACKUP_GUIDES_X;
-                backupGuides.y = BACKUP_GUIDES_Y;
-                backupGuides.w = BUTTON_SIZE;
-                backupGuides.h = BUTTON_SIZE;
-                texture = IMG_LoadTexture(renderer, "media/guides.png");
-                SDL_RenderCopy(renderer, texture, NULL, &backupGuides);
+                addTexture(BACKUP_GUIDES_X, BACKUP_GUIDES_Y, BUTTON_SIZE,
+                           BUTTON_SIZE, MEDIA_GUIDES);
             }
             
             // Draw to the window tied to the renderer
@@ -243,18 +263,31 @@ void handleMouseClick(Sint32 x, Sint32 y)
     {
         if (appClicked == BACKUP_GUIDES_INDEX)
         {
-            // Back button display
-            SDL_Rect backupGuides;
-            backupGuides.x = 0;
-            backupGuides.y = 0;
-            backupGuides.w = SCREEN_WIDTH;
-            backupGuides.h = SCREEN_HEIGHT;
-            texture = IMG_LoadTexture(renderer, "media/guides.png");
-            SDL_RenderCopy(renderer, texture, NULL, &backupGuides);
+            // Display the rear camera screen
+            addTexture(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, "media/cam3.jpg");
+
+            // Overlay back button
+            addTexture(BACK_BUTTON_X, BACK_BUTTON_Y, BUTTON_SIZE,
+                       BUTTON_SIZE, MEDIA_ARROW);
+
+            // Display backup guides
+            addTexture(BACKUP_GUIDES_X, BACKUP_GUIDES_Y, BUTTON_SIZE,
+                       BUTTON_SIZE, MEDIA_GUIDES);
+
+            if (backupGuidesActive)
+            {
+                backupGuidesActive = false;
+            }
+            else
+            {
+                backupGuidesActive = true;
+                
+                // Back button display
+                addTexture(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, MEDIA_GUIDES);
+            }
 
             // Draw to the window tied to the renderer
             SDL_RenderPresent(renderer);
-
         }
     }
 }
@@ -266,45 +299,20 @@ bool initTCP()
 
 void renderClock()
 {
-    SDL_Rect digit1;
-    digit1.x = CLOCK_DIGIT_1_X;
-    digit1.y = CLOCK_DIGIT_Y;
-    digit1.w = CLOCK_DIGIT_SIZE;
-    digit1.h = CLOCK_DIGIT_SIZE;
-    texture = IMG_LoadTexture(renderer, "media/1.png");
-    SDL_RenderCopy(renderer, texture, NULL, &digit1);
+    addTexture(CLOCK_DIGIT_1_X, CLOCK_DIGIT_Y, CLOCK_DIGIT_SIZE,
+               CLOCK_DIGIT_SIZE, MEDIA_CLOCK_1);
 
-    SDL_Rect digit2;
-    digit2.x = CLOCK_DIGIT_2_X;
-    digit2.y = CLOCK_DIGIT_Y;
-    digit2.w = CLOCK_DIGIT_SIZE;
-    digit2.h = CLOCK_DIGIT_SIZE;
-    texture = IMG_LoadTexture(renderer, "media/2.png");
-    SDL_RenderCopy(renderer, texture, NULL, &digit2);
+    addTexture(CLOCK_DIGIT_2_X, CLOCK_DIGIT_Y, CLOCK_DIGIT_SIZE,
+               CLOCK_DIGIT_SIZE, MEDIA_CLOCK_2);
 
-    SDL_Rect colonDigit;
-    colonDigit.x = CLOCK_DIGIT_C_X;
-    colonDigit.y = CLOCK_DIGIT_Y;
-    colonDigit.w = CLOCK_DIGIT_SIZE;
-    colonDigit.h = CLOCK_DIGIT_SIZE;
-    texture = IMG_LoadTexture(renderer, "media/colon.png");
-    SDL_RenderCopy(renderer, texture, NULL, &colonDigit);
+    addTexture(CLOCK_DIGIT_C_X, CLOCK_DIGIT_Y, CLOCK_DIGIT_SIZE,
+               CLOCK_DIGIT_SIZE, MEDIA_CLOCK_C);
 
-    SDL_Rect digit3;
-    digit3.x = CLOCK_DIGIT_3_X;
-    digit3.y = CLOCK_DIGIT_Y;
-    digit3.w = CLOCK_DIGIT_SIZE;
-    digit3.h = CLOCK_DIGIT_SIZE;
-    texture = IMG_LoadTexture(renderer, "media/5.png");
-    SDL_RenderCopy(renderer, texture, NULL, &digit3);
+    addTexture(CLOCK_DIGIT_3_X, CLOCK_DIGIT_Y, CLOCK_DIGIT_SIZE,
+               CLOCK_DIGIT_SIZE, MEDIA_CLOCK_5);
 
-    SDL_Rect digit4;
-    digit4.x = CLOCK_DIGIT_4_X;
-    digit4.y = CLOCK_DIGIT_Y;
-    digit4.w = CLOCK_DIGIT_SIZE;
-    digit4.h = CLOCK_DIGIT_SIZE;
-    texture = IMG_LoadTexture(renderer, "media/9.png");
-    SDL_RenderCopy(renderer, texture, NULL, &digit4);
+    addTexture(CLOCK_DIGIT_4_X, CLOCK_DIGIT_Y, CLOCK_DIGIT_SIZE,
+               CLOCK_DIGIT_SIZE, MEDIA_CLOCK_9);
 }
 
 void renderMainScreen()
@@ -315,42 +323,20 @@ void renderMainScreen()
     // Clear the entire screen to our selected color
     SDL_RenderClear(renderer);
     
-    //                // Main screen background
-    //                SDL_Rect mainBG;
-    //                mainBG.x = 0;
-    //                mainBG.y = 0;
-    //                mainBG.w = SCREEN_WIDTH;
-    //                mainBG.h = SCREEN_HEIGHT;
-    //                texture = IMG_LoadTexture(renderer, "media/bg2_light.png");
-    //                SDL_RenderCopy(renderer, texture, NULL, &mainBG);
+    addTexture(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, MEDIA_BACKGROUND);
     
     // Front camera display
-    SDL_Rect frontCam;
-    frontCam.x = FRONT_CAM_X;
-    frontCam.y = FRONT_CAM_Y;
-    frontCam.w = VIDEO_WIDTH;
-    frontCam.h = VIDEO_HEIGHT;
-    texture = IMG_LoadTexture(renderer, "media/cam3.jpg");
-    SDL_RenderCopy(renderer, texture, NULL, &frontCam);
+    addTexture(FRONT_CAM_X, FRONT_CAM_Y, VIDEO_WIDTH,
+               VIDEO_HEIGHT, "media/cam3.jpg");
     
     // Rear camera display
-    SDL_Rect rearCam;
-    rearCam.x = REAR_CAM_X;
-    rearCam.y = REAR_CAM_Y;
-    rearCam.w = VIDEO_WIDTH;
-    rearCam.h = VIDEO_HEIGHT;
-    texture = IMG_LoadTexture(renderer, "media/cam3.jpg");
-    SDL_RenderCopy(renderer, texture, NULL, &rearCam);
+    addTexture(REAR_CAM_X, REAR_CAM_Y, VIDEO_WIDTH,
+               VIDEO_HEIGHT, "media/cam3.jpg");
     
     // Android auto display
-    SDL_Rect androidAuto;
-    androidAuto.x = ANDROID_AUTO_CAM_X;
-    androidAuto.y = ANDROID_AUTO_CAM_Y;
-    androidAuto.w = VIDEO_WIDTH;
-    androidAuto.h = VIDEO_HEIGHT;
-    texture = IMG_LoadTexture(renderer, "media/androidAuto.jpeg");
-    SDL_RenderCopy(renderer, texture, NULL, &androidAuto);
-    
+    addTexture(ANDROID_AUTO_CAM_X, ANDROID_AUTO_CAM_Y, VIDEO_WIDTH,
+               VIDEO_HEIGHT, MEDIA_ANDROID_AUTO);
+
     renderClock();
     
     // Draw to the window tied to the renderer
@@ -419,8 +405,8 @@ int main(int argc, char* args[])
         return 0;
     }
 
-    // If initializing the display works run
-    // the program and destroy when closed
+    // If initializing the display works run the program and destroy when
+    // closed
     if (initDisplay())
     {
         while (keepRunning)
