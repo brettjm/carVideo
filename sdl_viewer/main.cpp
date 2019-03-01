@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2_image/SDL_image.h>
+#include <SDL2_net/SDL_net.h>
 #include <stdio.h>
 #include <string>
 
@@ -29,7 +30,8 @@
 #define CLOCK_DIGIT_SIZE    100
 
 // Other defines
-#define DEBOUNCE_MAX 60
+#define DEBOUNCE_MAX         60
+#define TCP_TIMEOUT          2000000
 #define ERROR_MESSAGE_TITLE  "System Error"
 #define MEDIA_BACKGROUND     "media/bg2.jpg"
 #define MEDIA_ARROW          "media/arrow.png"
@@ -70,6 +72,8 @@ SDL_Window* window = NULL;      // The window we'll be rendering to
 SDL_Renderer* renderer = NULL;  // The window renderer
 SDL_Texture* texture = NULL;    // Current displayed texture
 SDL_Event e;
+TCPsocket serverSock;
+TCPsocket clientSock;
 
 static volatile int keepRunning = 1;
 int mousePressCounter = 0;
@@ -78,13 +82,13 @@ bool backupGuidesActive = false;
 // Function declarations
 void errorMessage(const char* msg);
 void screenControl_tick();
-bool initDisplay();
+bool initAll();
 bool initTCP();
 void renderClock();
 void renderMainScreen();
 void handleMouseClick(Sint32 x, Sint32 y);
 void addTexture(int x, int y, int w, int h, const char* media);
-void destroySDL();
+void destroyAll();
 appIndex getMouseClickIndex(Sint32 x, Sint32 y);
 
 void errorMessage(const char* msg)
@@ -292,11 +296,6 @@ void handleMouseClick(Sint32 x, Sint32 y)
     }
 }
 
-bool initTCP()
-{
-    return true;
-}
-
 void renderClock()
 {
     addTexture(CLOCK_DIGIT_1_X, CLOCK_DIGIT_Y, CLOCK_DIGIT_SIZE,
@@ -346,7 +345,45 @@ void renderMainScreen()
     currentView = MAIN_WINDOW_VIEW;
 }
 
-bool initDisplay()
+bool initTCP()
+{
+    Uint32 tcpTimer = 0;
+    IPaddress ip;
+    
+    // Create a listening TCP socket on port 9999 (server)
+    if (SDLNet_ResolveHost(&ip, NULL, 9999) == -1)
+    {
+        errorMessage(SDLNet_GetError());
+        return false;
+    }
+    
+    serverSock = SDLNet_TCP_Open(&ip);
+    if (!serverSock)
+    {
+        errorMessage(SDLNet_GetError());
+        return false;
+    }
+    
+    // Accept a connection coming in on the server tcp socket
+    while (tcpTimer <= TCP_TIMEOUT && !clientSock)
+    {
+        clientSock = SDLNet_TCP_Accept(serverSock);
+        tcpTimer++;
+    }
+
+    if (clientSock)
+    {
+        // communicate over the new tcp socket
+    }
+    else
+    {
+        errorMessage(SDLNet_GetError());
+        return false;
+    }
+    return true;
+}
+
+bool initAll()
 {
     if (SDL_Init(SDL_INIT_VIDEO) >= 0)
     {
@@ -360,12 +397,20 @@ bool initDisplay()
         
         if (window != NULL)
         {
+            // Setup tcp connection
+            if (!initTCP())
+            {
+                errorMessage("ERROR: Could Not Initialize TCP Connection");
+                return false;
+            }
+
             // Create renderer for window
             renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
             
             if (renderer != NULL)
             {
                 renderMainScreen();
+                
             }
             else
             {
@@ -387,8 +432,12 @@ bool initDisplay()
     return true;
 }
 
-void destroySDL()
+void destroyAll()
 {
+    // Close the connection on sock
+    SDLNet_TCP_Close(serverSock);
+    SDLNet_TCP_Close(clientSock);
+    
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     
@@ -398,21 +447,14 @@ void destroySDL()
 
 int main(int argc, char* args[])
 {
-    // Setup tcp connection
-    if (!initTCP())
-    {
-        errorMessage("ERROR: Could Not Initialize TCP Connection");
-        return 0;
-    }
-
     // If initializing the display works run the program and destroy when
     // closed
-    if (initDisplay())
+    if (initAll())
     {
         while (keepRunning)
             screenControl_tick();
         
-        destroySDL();
+        destroyAll();
     }
     
     return 0;

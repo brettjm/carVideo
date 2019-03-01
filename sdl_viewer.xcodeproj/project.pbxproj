@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B43C2DB922281B6700A00CC5 /* SDL2_net.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B43C2DB822281B6700A00CC5 /* SDL2_net.framework */; };
 		B443803A221E629A0029F217 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B4438039221E629A0029F217 /* main.cpp */; };
 		B4438042221E62F20029F217 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B4438041221E62F20029F217 /* SDL2.framework */; };
 		B4E1628C2220DBA800162B8E /* SDL2_image.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B4E1628B2220DBA800162B8E /* SDL2_image.framework */; };
@@ -25,6 +26,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B43C2DB822281B6700A00CC5 /* SDL2_net.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2_net.framework; path = ../../../../../../Library/Frameworks/SDL2_net.framework; sourceTree = "<group>"; };
 		B4438036221E629A0029F217 /* sdl_viewer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = sdl_viewer; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4438039221E629A0029F217 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		B4438041221E62F20029F217 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = ../../../../../../Library/Frameworks/SDL2.framework; sourceTree = "<group>"; };
@@ -36,6 +38,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B43C2DB922281B6700A00CC5 /* SDL2_net.framework in Frameworks */,
 				B4E1628C2220DBA800162B8E /* SDL2_image.framework in Frameworks */,
 				B4438042221E62F20029F217 /* SDL2.framework in Frameworks */,
 			);
@@ -72,6 +75,7 @@
 		B4438040221E62F10029F217 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				B43C2DB822281B6700A00CC5 /* SDL2_net.framework */,
 				B4E1628B2220DBA800162B8E /* SDL2_image.framework */,
 				B4438041221E62F20029F217 /* SDL2.framework */,
 			);
