@@ -1,8 +1,9 @@
 #include <SDL2/SDL.h>
 #include <SDL2_image/SDL_image.h>
 #include <SDL2_net/SDL_net.h>
-#include <stdio.h>
-#include <string>
+#include <fstream>
+
+#include <iostream>
 
 // Screen dimension constants
 #define SCREEN_WIDTH        800
@@ -31,7 +32,7 @@
 
 // Other defines
 #define DEBOUNCE_MAX         60
-#define TCP_TIMEOUT          2000000
+#define TCP_TIMEOUT          6000000
 #define ERROR_MESSAGE_TITLE  "System Error"
 #define MEDIA_BACKGROUND     "media/bg2.jpg"
 #define MEDIA_ARROW          "media/arrow.png"
@@ -68,13 +69,14 @@ enum displayView
 } currentView;
 
 // Global variables
-SDL_Window* window = NULL;      // The window we'll be rendering to
+SDL_Window*   window   = NULL;  // The window we'll be rendering to
 SDL_Renderer* renderer = NULL;  // The window renderer
-SDL_Texture* texture = NULL;    // Current displayed texture
+SDL_Texture*  texture  = NULL;  // Current displayed texture
 SDL_Event e;
 TCPsocket serverSock;
 TCPsocket clientSock;
 
+std::ofstream logFile;
 static volatile int keepRunning = 1;
 int mousePressCounter = 0;
 bool backupGuidesActive = false;
@@ -94,8 +96,6 @@ appIndex getMouseClickIndex(Sint32 x, Sint32 y);
 void errorMessage(const char* msg)
 {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, ERROR_MESSAGE_TITLE, msg, NULL);
-    
-    printf("SDL_Error: %s\n", SDL_GetError());
 }
 
 void addTexture(int x, int y, int w, int h, const char* media)
@@ -131,7 +131,7 @@ void screenControl_tick()
             SDL_PollEvent(&e);
             break;
         default:
-            printf("tick state default error");
+            logFile << "tick state default error\n";
             break;
     }
     
@@ -159,7 +159,7 @@ void screenControl_tick()
             }
             break;
         default:
-            printf("tick state default error");
+            logFile << "tick state default error\n";
             break;
     }
 }
@@ -353,14 +353,16 @@ bool initTCP()
     // Create a listening TCP socket on port 9999 (server)
     if (SDLNet_ResolveHost(&ip, NULL, 9999) == -1)
     {
-        errorMessage(SDLNet_GetError());
+        logFile << "initTCP - SDLNet_ResolveHost: "
+                << SDLNet_GetError() << '\n';
         return false;
     }
     
     serverSock = SDLNet_TCP_Open(&ip);
     if (!serverSock)
     {
-        errorMessage(SDLNet_GetError());
+        logFile << "initTCP - SDLNet_TCP_Open: "
+                << SDLNet_GetError() << '\n';
         return false;
     }
     
@@ -371,13 +373,9 @@ bool initTCP()
         tcpTimer++;
     }
 
-    if (clientSock)
+    if (!clientSock)
     {
-        // communicate over the new tcp socket
-    }
-    else
-    {
-        errorMessage(SDLNet_GetError());
+        logFile << "initTCP - Client Timeout\n";
         return false;
     }
     return true;
@@ -385,42 +383,42 @@ bool initTCP()
 
 bool initAll()
 {
+    // Open log file
+    logFile.open("carMonitor_log.txt");
+    
+    // Setup tcp connection
+    if (!initTCP())
+    {
+        errorMessage("ERROR: Could Not Initialize TCP Connection");
+        return false;
+    }
+
     if (SDL_Init(SDL_INIT_VIDEO) >= 0)
     {
         // Set texture filtering to linear
         if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"))
-            printf("Warning: Linear texture filtering not enabled!");
+            logFile << "Warning: Linear texture filtering not enabled\n";
         
         // Create window
-        window = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED,                      SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT,
+        window = SDL_CreateWindow("Car Monitor", SDL_WINDOWPOS_UNDEFINED,                      SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT,
             SDL_WINDOW_SHOWN | SDL_WINDOW_ALWAYS_ON_TOP);
         
         if (window != NULL)
         {
-            // Setup tcp connection
-            if (!initTCP())
-            {
-                errorMessage("ERROR: Could Not Initialize TCP Connection");
-                return false;
-            }
-
             // Create renderer for window
             renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
             
             if (renderer != NULL)
-            {
                 renderMainScreen();
-                
-            }
             else
             {
-                errorMessage("ERROR: Renderer could not be created");
+                logFile << "Renderer Error:" << SDL_GetError() << '\n';
                 return false;
             }
         }
         else
         {
-            errorMessage("ERROR: Window could not be created");
+            logFile << "Window Error:" << SDL_GetError() << '\n';
             return false;
         }
     }
@@ -434,26 +432,36 @@ bool initAll()
 
 void destroyAll()
 {
+    std::cout << "shutting down\n";
+    
     // Close the connection on sock
     SDLNet_TCP_Close(serverSock);
     SDLNet_TCP_Close(clientSock);
     
+    // Destroy SDL objects
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     
     // Quit SDL subsystems
     SDL_Quit();
+    
+    // Close the log file
+    logFile.close();
 }
 
 int main(int argc, char* args[])
 {
-    // If initializing the display works run the program and destroy when
-    // closed
     if (initAll())
     {
+        char msg[2];
+        // Communicate over the new tcp socket
+        SDLNet_TCP_Recv(clientSock, msg, 1);
+        std::cout << msg << '\n';
+
         while (keepRunning)
+        {
             screenControl_tick();
-        
+        }
         destroyAll();
     }
     
