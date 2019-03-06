@@ -72,6 +72,8 @@ enum displayView
 SDL_Window*   window   = NULL;  // The window we'll be rendering to
 SDL_Renderer* renderer = NULL;  // The window renderer
 SDL_Texture*  texture  = NULL;  // Current displayed texture
+SDL_Texture* yuvTexture = NULL;
+SDL_Rect yuvRect = NULL;
 SDL_Event e;
 TCPsocket serverSock;
 TCPsocket clientSock;
@@ -325,8 +327,18 @@ void renderMainScreen()
     addTexture(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, MEDIA_BACKGROUND);
     
     // Front camera display
-    addTexture(FRONT_CAM_X, FRONT_CAM_Y, VIDEO_WIDTH,
-               VIDEO_HEIGHT, "media/cam3.jpg");
+    yuvTexture = SDL_CreateTexture(renderer,
+                                   SDL_PIXELFORMAT_IYUV,
+                                   SDL_TEXTUREACCESS_STREAMING,
+                                   VIDEO_WIDTH, VIDEO_HEIGHT);
+    yuvRect.x = FRONT_CAM_X;
+    yuvRect.y = FRONT_CAM_Y;
+    yuvRect.w = VIDEO_WIDTH;
+    yuvRect.h = VIDEO_HEIGHT;
+    SDL_RenderCopy(renderer, yuvTexture, NULL, &yuvRect);
+
+//    addTexture(FRONT_CAM_X, FRONT_CAM_Y, VIDEO_WIDTH,
+//               VIDEO_HEIGHT, "media/cam3.jpg");
     
     // Rear camera display
     addTexture(REAR_CAM_X, REAR_CAM_Y, VIDEO_WIDTH,
@@ -433,7 +445,7 @@ bool initAll()
 void destroyAll()
 {
     std::cout << "shutting down\n";
-    
+    SDL_DestroyTexture(yuvTexture);
     // Close the connection on sock
     SDLNet_TCP_Close(serverSock);
     SDLNet_TCP_Close(clientSock);
@@ -461,9 +473,13 @@ int main(int argc, char* args[])
         while (keepRunning)
         {
             screenControl_tick();
+            
+            SDL_LockTexture(yuvTexture, yuvRect, <#void **pixels#>, <#int *pitch#>)
         }
         destroyAll();
     }
+    
+    // Bluetooth: A2DP for music, AVRCP for music remote control
     
     return 0;
 }
