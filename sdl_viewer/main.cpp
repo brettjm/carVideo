@@ -32,7 +32,7 @@
 
 // Other defines
 #define DEBOUNCE_MAX         60
-#define TCP_TIMEOUT          6000000
+#define TCP_TIMEOUT          10000000
 #define ERROR_MESSAGE_TITLE  "System Error"
 #define MEDIA_BACKGROUND     "media/bg2.jpg"
 #define MEDIA_ARROW          "media/arrow.png"
@@ -73,10 +73,12 @@ SDL_Window*   window   = NULL;  // The window we'll be rendering to
 SDL_Renderer* renderer = NULL;  // The window renderer
 SDL_Texture*  texture  = NULL;  // Current displayed texture
 SDL_Texture* yuvTexture = NULL;
-SDL_Rect yuvRect = NULL;
+SDL_Rect yuvRect;
 SDL_Event e;
 TCPsocket serverSock;
 TCPsocket clientSock;
+void* pixels;
+int pitch;
 
 std::ofstream logFile;
 static volatile int keepRunning = 1;
@@ -465,17 +467,45 @@ int main(int argc, char* args[])
 {
     if (initAll())
     {
-        char msg[2];
+        char msg[SCREEN_WIDTH * SCREEN_HEIGHT * 16];
+        
         // Communicate over the new tcp socket
-        SDLNet_TCP_Recv(clientSock, msg, 1);
-        std::cout << msg << '\n';
-
-        while (keepRunning)
+        int bytes = SDLNet_TCP_Recv(clientSock, msg, 1);
+        
+        if (bytes > 0)
         {
-            screenControl_tick();
-            
-            SDL_LockTexture(yuvTexture, yuvRect, <#void **pixels#>, <#int *pitch#>)
+            std::cout << bytes << '\n';
+            std::ofstream myFile;
+            myFile.open("blob.yuv");
+            myFile << msg << '\n';
+            myFile.close();
         }
+        else
+            std::cout << "Something bad happened\n";
+
+//        void* pixels = NULL;
+//        int pitch = 0;
+//        if (SDL_LockTexture(yuvTexture, NULL, &pixels, &pitch) < 0)
+//        {
+//            std::cout << "Error locking texture\n";
+//        }
+//        else
+//        {
+//            if (pixels)
+//                memcpy(pixels, msg, pitch * SCREEN_HEIGHT);
+//            else
+//                std::cout << "error: pixels is null\n";
+//
+//            SDL_UnlockTexture(yuvTexture);
+//            SDL_RenderCopy(renderer, yuvTexture, NULL, &yuvRect);
+//            SDL_RenderPresent(renderer);
+//        }
+        
+//        while (keepRunning)
+//        {
+//            screenControl_tick();
+//        }
+        
         destroyAll();
     }
     
