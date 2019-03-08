@@ -467,18 +467,21 @@ int main(int argc, char* args[])
 {
     if (initAll())
     {
-        char msg[SCREEN_WIDTH * SCREEN_HEIGHT * 16];
+        int maxLength = 576000;
+        char msg[maxLength];
         
         // Communicate over the new tcp socket
-        int bytes = SDLNet_TCP_Recv(clientSock, msg, 1);
+        int bytes = SDLNet_TCP_Recv(clientSock, msg, maxLength);
         
         if (bytes > 0)
         {
             std::cout << bytes << '\n';
-            std::ofstream myFile;
-            myFile.open("blob.yuv");
-            myFile << msg << '\n';
-            myFile.close();
+//            std::ofstream myFile;
+//            myFile.open("blob.yuv");
+//            for (int i = 0; i < 1448; i++)
+//                myFile << msg[i];
+//            myFile << '\n';
+//            myFile.close();
         }
         else
             std::cout << "Something bad happened\n";
@@ -501,6 +504,12 @@ int main(int argc, char* args[])
 //            SDL_RenderPresent(renderer);
 //        }
         
+//        while (keepRunning)
+//        {
+//            SDL_PollEvent(&e);
+//            if (e.type == SDL_QUIT)
+//                keepRunning = false;
+//        }
 //        while (keepRunning)
 //        {
 //            screenControl_tick();
