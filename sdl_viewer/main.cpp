@@ -29,6 +29,10 @@
 #define CLOCK_DIGIT_4_X     460
 #define CLOCK_DIGIT_Y       190
 #define CLOCK_DIGIT_SIZE    100
+#define YUV_FRAME_BYTES     12
+#define BITS_PER_BYTE        8
+#define FRAME_SIZE          (SCREEN_WIDTH * SCREEN_HEIGHT * YUV_FRAME_BYTES) /BITS_PER_BYTE;
+#define FRAMES_PER_SEC      4
 
 // Other defines
 #define DEBOUNCE_MAX         60
@@ -337,10 +341,7 @@ void renderMainScreen()
     yuvRect.y = FRONT_CAM_Y;
     yuvRect.w = VIDEO_WIDTH;
     yuvRect.h = VIDEO_HEIGHT;
-    SDL_RenderCopy(renderer, yuvTexture, NULL, &yuvRect);
-
-//    addTexture(FRONT_CAM_X, FRONT_CAM_Y, VIDEO_WIDTH,
-//               VIDEO_HEIGHT, "media/cam3.jpg");
+//    SDL_RenderCopy(renderer, yuvTexture, NULL, &yuvRect);
     
     // Rear camera display
     addTexture(REAR_CAM_X, REAR_CAM_Y, VIDEO_WIDTH,
@@ -467,49 +468,53 @@ int main(int argc, char* args[])
 {
     if (initAll())
     {
-        int maxLength = 576000;
-        char msg[maxLength];
+        // YUV is 12 bits per pixel:
+        // (800 * 480 * 12) / 8 bitsPerByte = 576000 bytes
+        int msgSize = 1;
+        char msg[msgSize];
+        char buffer[576000];
+        int bytes = 0;
         
-        // Communicate over the new tcp socket
-        int bytes = SDLNet_TCP_Recv(clientSock, msg, maxLength);
-        
-        if (bytes > 0)
-        {
-            std::cout << bytes << '\n';
-//            std::ofstream myFile;
-//            myFile.open("blob.yuv");
-//            for (int i = 0; i < 1448; i++)
-//                myFile << msg[i];
-//            myFile << '\n';
-//            myFile.close();
-        }
-        else
-            std::cout << "Something bad happened\n";
+        void* pixels = NULL;
+        int pitch = 0;
 
-//        void* pixels = NULL;
-//        int pitch = 0;
-//        if (SDL_LockTexture(yuvTexture, NULL, &pixels, &pitch) < 0)
-//        {
-//            std::cout << "Error locking texture\n";
-//        }
-//        else
-//        {
-//            if (pixels)
-//                memcpy(pixels, msg, pitch * SCREEN_HEIGHT);
-//            else
-//                std::cout << "error: pixels is null\n";
-//
-//            SDL_UnlockTexture(yuvTexture);
-//            SDL_RenderCopy(renderer, yuvTexture, NULL, &yuvRect);
-//            SDL_RenderPresent(renderer);
-//        }
+        std::cout << bytes << '\n';
+
+        while (keepRunning)
+        {
+            SDL_PollEvent(&e);
+            if (e.type == SDL_QUIT)
+                keepRunning = false;
+
+            // Communicate over the new tcp socket
+            while (bytes < 576000)
+            {
+                bytes += SDLNet_TCP_Recv(clientSock, msg, msgSize);
+                buffer[bytes - 1] = msg[0];
+            }
+            bytes = 0;
+            
+            if (SDL_LockTexture(yuvTexture, NULL, &pixels, &pitch) < 0)
+            {
+                std::cout << "Error locking texture\n";
+                keepRunning = false;
+            }
+            else
+            {
+                if (pixels)
+                    memcpy(pixels, buffer, 576000);
+                else
+                {
+                    std::cout << "error: pixels is null\n";
+                    keepRunning = false;
+                }
+                SDL_UnlockTexture(yuvTexture);
+                SDL_RenderCopy(renderer, yuvTexture, NULL, &yuvRect);
+                SDL_RenderPresent(renderer);
+            }
+        }
         
-//        while (keepRunning)
-//        {
-//            SDL_PollEvent(&e);
-//            if (e.type == SDL_QUIT)
-//                keepRunning = false;
-//        }
+        
 //        while (keepRunning)
 //        {
 //            screenControl_tick();
