@@ -81,9 +81,6 @@ SDL_Rect yuvRect;
 SDL_Event e;
 TCPsocket serverSock;
 TCPsocket clientSock;
-void* pixels;
-int pitch;
-
 std::ofstream logFile;
 static volatile int keepRunning = 1;
 int mousePressCounter = 0;
@@ -332,17 +329,33 @@ void renderMainScreen()
     
     addTexture(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, MEDIA_BACKGROUND);
     
-    // Front camera display
-    yuvTexture = SDL_CreateTexture(renderer,
-                                   SDL_PIXELFORMAT_IYUV,
-                                   SDL_TEXTUREACCESS_STREAMING,
-                                   VIDEO_WIDTH, VIDEO_HEIGHT);
-    yuvRect.x = FRONT_CAM_X;
-    yuvRect.y = FRONT_CAM_Y;
-    yuvRect.w = VIDEO_WIDTH;
-    yuvRect.h = VIDEO_HEIGHT;
+//    // Front camera display
+//    SDL_RWops *io = SDL_RWFromFile("media/test.yuv", "rb");
+//    if (io != NULL)
+//    {
+//        SDL_RWread(io, buffer, sizeof (buffer), 1);
+//        SDL_RWclose(io);
+//    }
+//
+//    yuvTexture = SDL_CreateTexture(renderer,
+//                                   SDL_PIXELFORMAT_IYUV,
+//                                   SDL_TEXTUREACCESS_STREAMING,
+//                                   SCREEN_WIDTH, SCREEN_HEIGHT);
+//
+//    SDL_Rect rect;
+//    rect.x = 0;
+//    rect.y = 0;
+//    rect.w = SCREEN_WIDTH;
+//    rect.h = SCREEN_HEIGHT;
+//
+//    yuvRect.x = FRONT_CAM_X;
+//    yuvRect.y = FRONT_CAM_Y;
+//    yuvRect.w = VIDEO_WIDTH;
+//    yuvRect.h = VIDEO_HEIGHT;
+//
+//    SDL_UpdateTexture(yuvTexture, &rect, buffer, 800);
 //    SDL_RenderCopy(renderer, yuvTexture, NULL, &yuvRect);
-    
+
     // Rear camera display
     addTexture(REAR_CAM_X, REAR_CAM_Y, VIDEO_WIDTH,
                VIDEO_HEIGHT, "media/cam3.jpg");
@@ -474,12 +487,41 @@ int main(int argc, char* args[])
         char msg[msgSize];
         char buffer[576000];
         int bytes = 0;
+        void* pixels;
+        int pitch;
+
+        // Front camera display
+        SDL_Rect rect;
+        rect.x = 0;
+        rect.y = 0;
+        rect.w = SCREEN_WIDTH;
+        rect.h = SCREEN_HEIGHT;
         
-        void* pixels = NULL;
-        int pitch = 0;
+//        yuvRect.x = FRONT_CAM_X;
+//        yuvRect.y = FRONT_CAM_Y;
+//        yuvRect.w = VIDEO_WIDTH;
+//        yuvRect.h = VIDEO_HEIGHT;
 
-        std::cout << bytes << '\n';
+//        SDL_RWops *io = SDL_RWFromFile("media/test.yuv", "rb");
+//        if (io != NULL)
+//        {
+//            SDL_RWread(io, buffer, sizeof(buffer), 1);
+//            SDL_RWclose(io);
+//        }
+//
+        yuvTexture = SDL_CreateTexture(renderer,
+                                       SDL_PIXELFORMAT_IYUV,
+                                       SDL_TEXTUREACCESS_STREAMING,
+                                       SCREEN_WIDTH, SCREEN_HEIGHT);
 
+//        if (SDL_LockTexture(yuvTexture, NULL, &pixels, &pitch) < 0)
+//            std::cout << "Error locking texture\n";
+//        memcpy(pixels, buffer, 576000);
+//        SDL_UnlockTexture(yuvTexture);
+        
+//        SDL_RenderCopy(renderer, yuvTexture, NULL, &rect);
+//        SDL_RenderPresent(renderer);
+        
         while (keepRunning)
         {
             SDL_PollEvent(&e);
@@ -493,7 +535,7 @@ int main(int argc, char* args[])
                 buffer[bytes - 1] = msg[0];
             }
             bytes = 0;
-            
+
             if (SDL_LockTexture(yuvTexture, NULL, &pixels, &pitch) < 0)
             {
                 std::cout << "Error locking texture\n";
@@ -501,15 +543,10 @@ int main(int argc, char* args[])
             }
             else
             {
-                if (pixels)
-                    memcpy(pixels, buffer, 576000);
-                else
-                {
-                    std::cout << "error: pixels is null\n";
-                    keepRunning = false;
-                }
+                memcpy(pixels, buffer, 576000);
                 SDL_UnlockTexture(yuvTexture);
-                SDL_RenderCopy(renderer, yuvTexture, NULL, &yuvRect);
+                
+                SDL_RenderCopy(renderer, yuvTexture, NULL, &rect);
                 SDL_RenderPresent(renderer);
             }
         }
